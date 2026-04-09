@@ -2,5 +2,12 @@ Adam wakes up in the morning.
 He brushes his teeth.
 He takes a bath.
 He has breakfast.
+<<<<<<< HEAD
 Then he watched youtube.
 He goes to class.
+=======
+Then he checked instagram
+He goes to class.
+Eats fried chicken
+Drinks Watermelon juice
+>>>>>>> at-the-class
