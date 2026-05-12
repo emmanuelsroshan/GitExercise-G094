@@ -84,6 +84,45 @@ def calculate_match(avail1, avail2):
 
     match_percentage = (len(common_days) / len(total_days)) * 100
     return round(match_percentage, 2)
+@app.route('/match', methods=['GET'])
+def match_users():
+    subject = request.args.get('subject')
+    user_id = request.args.get('user_id')
+
+    conn = sqlite3.connect('students.db')
+    c = conn.cursor()
+
+    # Get current user
+    c.execute("SELECT availability FROM users WHERE id = ?", (user_id,))
+    current_user = c.fetchone()
+
+    if not current_user:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+
+    current_availability = current_user[0]
+
+    # Get other users with same subject
+    c.execute(
+        "SELECT id, name, availability FROM users WHERE subject = ? AND id != ?",
+        (subject, user_id)
+    )
+    users = c.fetchall()
+    conn.close()
+
+    results = []
+
+    for u in users:
+        other_availability = u[2]
+        match_percentage = calculate_match(current_availability, other_availability)
+
+        results.append({
+            "id": u[0],
+            "name": u[1],
+            "match_percentage": match_percentage
+        })
+
+    return jsonify(results)
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
