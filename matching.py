@@ -1,14 +1,61 @@
+import pandas as pd
+
 def calculate_match(s1, s2):
-    date_score = 25 if s1['date'] == s2['date'] else 0
-    time_score = 25 if s1['time'] == s2['time'] else 0
-    subject_score = 25 if s1['subject_id'] == s2['subject_id'] else 0
-    skill_score = 25 if (s1['adv'] == s2['weak'] or s1['weak'] == s2['adv']) else 0
+    if str(s1['subject_id']).strip().upper() != str(s2['subject_id']).strip().upper():
+        return 0, []
 
-    return date_score + time_score + subject_score + skill_score
+    score = 0
+    reasons = []
+
+    # simple matching (we keep it simple first)
+    if s1['time_slots'] == s2['time_slots']:
+        score += 20
+        reasons.append("Same time slot")
+
+    if s1['advantage'].lower() in s2['weakness'].lower():
+        score += 30
+        reasons.append("Your strength helps their weakness")
+
+    if s2.get('rating', 3) >= 4.5:
+        score += 10
+        reasons.append("High rated student")
+
+    return score, reasons
 
 
-# TEMP database (later replace with Member 2)
-students_db = [
-    {'name': 'Student B', 'subject_id': 'CMT1134', 'date': 'Monday', 'time': 'Morning', 'adv': 'Math', 'weak': 'Python'},
-    {'name': 'Student C', 'subject_id': 'CMT1134', 'date': 'Friday', 'time': 'Evening', 'adv': 'Art', 'weak': 'Music'}
+def get_match_results(user_input, database_df):
+    results = []
+
+    for _, row in database_df.iterrows():
+        score, reasons = calculate_match(user_input, row.to_dict())
+
+        results.append({
+            'name': row['name'],
+            'score': score,
+            'reasons': reasons
+        })
+
+    return sorted(results, key=lambda x: x['score'], reverse=True)
+
+
+# TEMP DATA (later replace with Member 2)
+data = [
+    {
+        'name': 'Student B',
+        'subject_id': 'CMT1134',
+        'time_slots': 'MON_14',
+        'advantage': 'Math',
+        'weakness': 'Python',
+        'rating': 4.5
+    },
+    {
+        'name': 'Student C',
+        'subject_id': 'CMT1134',
+        'time_slots': 'FRI_10',
+        'advantage': 'Art',
+        'weakness': 'Music',
+        'rating': 3.0
+    }
 ]
+
+students_df = pd.DataFrame(data)
