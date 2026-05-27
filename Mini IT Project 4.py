@@ -4,6 +4,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 import os
 import pandas as pd
+import requests
 
 uploaded_result_path = ""
 uploaded_photo_path = ""
@@ -173,7 +174,9 @@ mock_raw_data = [
         'study_style': 'Quiet', 'resource_pref': 'Lecture Slides', 'language': 'English', 'rating': 2.1
     }
 ]
-students_df = pd.DataFrame(mock_raw_data)
+response = requests.get("http://127.0.0.1:5000/search?subject=CMT1134")
+data = response.json()
+students_df = pd.DataFrame(data)
 
 def upload_result():
     global uploaded_result_path
