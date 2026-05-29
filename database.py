@@ -2,11 +2,11 @@ import sqlite3
 
 DB_NAME = "students.db"
 
+
 def connect():
     return sqlite3.connect(DB_NAME)
 
 
-# create table (run once)
 def create_table():
     conn = connect()
     cursor = conn.cursor()
@@ -26,21 +26,19 @@ def create_table():
     conn.close()
 
 
-# save user
-def save_user(name, subject, time_slots, advantage, weakness):
+def save_user(name, subject_id, time_slots, advantage, weakness):
     conn = connect()
     cursor = conn.cursor()
 
     cursor.execute("""
     INSERT INTO users (name, subject_id, time_slots, advantage, weakness)
     VALUES (?, ?, ?, ?, ?)
-    """, (name, subject, time_slots, advantage, weakness))
+    """, (name, subject_id, time_slots, advantage, weakness))
 
     conn.commit()
     conn.close()
 
 
-# get all users
 def get_users():
     conn = connect()
     cursor = conn.cursor()
@@ -49,14 +47,64 @@ def get_users():
     rows = cursor.fetchall()
 
     users = []
-    for r in rows:
+
+    for row in rows:
         users.append({
-            'name': r[1],
-            'subject_id': r[2],
-            'time_slots': r[3],
-            'advantage': r[4],
-            'weakness': r[5]
+            "id": row[0],
+            "name": row[1],
+            "subject_id": row[2],
+            "time_slots": row[3],
+            "advantage": row[4],
+            "weakness": row[5]
         })
 
     conn.close()
     return users
+
+
+def get_user_by_name(name):
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT * FROM users
+    WHERE name = ?
+    """, (name,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return {
+            "id": row[0],
+            "name": row[1],
+            "subject_id": row[2],
+            "time_slots": row[3],
+            "advantage": row[4],
+            "weakness": row[5]
+        }
+
+    return None
+
+
+def update_user(name, subject_id, time_slots, advantage, weakness):
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    UPDATE users
+    SET subject_id = ?, time_slots = ?, advantage = ?, weakness = ?
+    WHERE name = ?
+    """, (subject_id, time_slots, advantage, weakness, name))
+
+    conn.commit()
+    conn.close()
+
+
+def save_or_update_user(name, subject_id, time_slots, advantage, weakness):
+    existing_user = get_user_by_name(name)
+
+    if existing_user:
+        update_user(name, subject_id, time_slots, advantage, weakness)
+    else:
+        save_user(name, subject_id, time_slots, advantage, weakness)
