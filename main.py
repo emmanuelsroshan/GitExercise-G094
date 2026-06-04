@@ -2,7 +2,7 @@ from matching import get_match_results
 from database import get_users, create_table, get_user_by_name, save_or_update_user
 import pandas as pd
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 
 # =========================
@@ -15,7 +15,7 @@ class StudyGroupApp(tk.Tk):
         self.title("MMU StudyGroup Matchmaker")
         self.geometry("700x500")
 
-        # stores the currently logged-in user
+        # stores currently logged-in user
         self.current_user_name = ""
 
         # Container for pages
@@ -82,6 +82,7 @@ class LoginPage(tk.Frame):
         name = self.username.get().strip()
 
         if name == "":
+            messagebox.showwarning("Missing Name", "Please enter your name before logging in.")
             return
 
         self.controller.current_user_name = name
@@ -159,7 +160,7 @@ class ProfilePage(tk.Frame):
         tk.Button(
             main_frame,
             text="Continue to Search",
-            command=lambda: controller.show_frame(SearchPage),
+            command=self.go_to_search,
             bg="#4CAF50",
             fg="white",
             font=("Arial", 11, "bold"),
@@ -205,8 +206,11 @@ class ProfilePage(tk.Frame):
         advantage = self.advantage.get().strip()
         weakness = self.weakness.get().strip()
 
-        if name == "":
-            self.profile_display.config(text="Please enter a name before saving.")
+        if name == "" or subject == "" or time_slots == "" or advantage == "" or weakness == "":
+            messagebox.showwarning(
+                "Incomplete Profile",
+                "Please fill in all profile fields before saving."
+            )
             return
 
         save_or_update_user(name, subject, time_slots, advantage, weakness)
@@ -221,6 +225,14 @@ class ProfilePage(tk.Frame):
                  f"Strength: {advantage}\n"
                  f"Weakness: {weakness}"
         )
+
+        messagebox.showinfo("Profile Saved", "Profile saved / updated successfully.")
+
+    def go_to_search(self):
+        search_page = self.controller.frames[SearchPage]
+        search_page.load_from_profile()
+
+        self.controller.show_frame(SearchPage)
 
 
 # =========================
@@ -276,7 +288,17 @@ class SearchPage(tk.Frame):
             fg="white",
             font=("Arial", 12, "bold"),
             width=15
-        ).pack(pady=15)
+        ).pack(pady=10)
+
+        tk.Button(
+            main_frame,
+            text="Back to Profile",
+            command=lambda: controller.show_frame(ProfilePage),
+            bg="#777777",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            width=15
+        ).pack(pady=5)
 
         self.result_label = tk.Label(
             main_frame,
@@ -292,12 +314,39 @@ class SearchPage(tk.Frame):
         )
         self.result_label.pack(pady=10)
 
+    def load_from_profile(self):
+        name = self.controller.current_user_name
+        user = get_user_by_name(name)
+
+        if user:
+            self.subject.delete(0, tk.END)
+            self.time.delete(0, tk.END)
+            self.adv.delete(0, tk.END)
+            self.weak.delete(0, tk.END)
+
+            self.subject.insert(0, user["subject_id"])
+            self.time.insert(0, user["time_slots"])
+            self.adv.insert(0, user["advantage"])
+            self.weak.insert(0, user["weakness"])
+
     def show_results(self):
+        subject = self.subject.get().strip()
+        time_slots = self.time.get().strip()
+        advantage = self.adv.get().strip()
+        weakness = self.weak.get().strip()
+
+        if subject == "" or time_slots == "" or advantage == "" or weakness == "":
+            messagebox.showwarning(
+                "Incomplete Search",
+                "Please fill in all search fields before finding a match."
+            )
+            return
+
         user_data = {
-            'subject_id': self.subject.get().strip(),
-            'time_slots': self.time.get().strip(),
-            'advantage': self.adv.get().strip(),
-            'weakness': self.weak.get().strip()
+            'subject_id': subject,
+            'time_slots': time_slots,
+            'advantage': advantage,
+            'weakness': weakness
         }
 
         users_list = get_users()
@@ -314,7 +363,10 @@ class SearchPage(tk.Frame):
 
         output = "Top Study Matches:\n\n"
 
-        for r in results:
+        for index, r in enumerate(results):
+            if index == 0:
+                output += "⭐ Best Match\n"
+
             output += f"• {r['name']}  ({r['score']}%)\n"
 
             for reason in r['reasons']:
