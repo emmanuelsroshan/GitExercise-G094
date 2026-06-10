@@ -292,6 +292,16 @@ class SearchPage(tk.Frame):
 
         tk.Button(
             main_frame,
+            text="Clear Results",
+            command=lambda: self.result_label.config(text=""),
+            bg="#999999",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            width=15
+        ).pack(pady=5)
+
+        tk.Button(
+            main_frame,
             text="Back to Profile",
             command=lambda: controller.show_frame(ProfilePage),
             bg="#777777",
@@ -330,10 +340,13 @@ class SearchPage(tk.Frame):
             self.weak.insert(0, user["weakness"])
 
     def show_results(self):
-        subject = self.subject.get().strip()
-        time_slots = self.time.get().strip()
+        self.result_label.config(text="Finding matches...")
+        self.update_idletasks()
+        subject = self.subject.get().strip().upper()
+        time_slots = self.time.get().strip().upper()
         advantage = self.adv.get().strip()
         weakness = self.weak.get().strip()
+        
 
         if subject == "" or time_slots == "" or advantage == "" or weakness == "":
             messagebox.showwarning(
@@ -361,13 +374,23 @@ class SearchPage(tk.Frame):
 
         results = get_match_results(user_data, users_df)
 
-        output = "Top Study Matches:\n\n"
+        results = [r for r in results if r['name'] != self.controller.current_user_name]
+
+        if len(results) == 0:
+            self.result_label.config(
+                text="No suitable matches found.\nTry changing your subject or time."
+            )
+            return
+
+        results = results[:3]
+
+        output = f"Found {len(results)} matches\n\n"
 
         for index, r in enumerate(results):
             if index == 0:
                 output += "⭐ Best Match\n"
 
-            output += f"• {r['name']}  ({r['score']}%)\n"
+            output += f"• {r['name']} ({r['score']}%)\n"
 
             for reason in r['reasons']:
                 output += f"   - {reason}\n"
